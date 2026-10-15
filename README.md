@@ -114,3 +114,62 @@ curl http://$(minikube ip):30222
 ![Application](06-curl-app.png)
 
 **Remarque :** le PDF du cours utilise le port 8080 dans les fichiers YAML, mais l'application écoute sur 2222. J'ai donc utilisé 2222 partout.
+
+## Partie II : Jenkins Freestyle
+
+Jenkins est accessible sur `http://192.168.65.138:8080`. Il tourne avec Java 21 (exigé par la version 2.580.1), alors que le projet utilise Java 17.
+
+### Étape 1 : Job `freestyle_demo`
+
+Création d'un projet free-style nommé `freestyle_demo` avec une étape de build « Exécuter un script shell » :
+
+```bash
+echo 'Bonjour'
+ls -l
+echo 'Bonjour DevOps' > test.txt
+ls -l
+```
+
+Le fichier `test.txt` est créé dans `/var/lib/jenkins/workspace/freestyle_demo`.
+
+### Étape 2 : Exécution de Test.java
+
+Un fichier `Test.java` qui affiche « Hi Master DevOps » est placé dans le workspace, et la commande `java Test.java` est ajoutée au script.
+
+```java
+public class Test {
+    public static void main(String[] args) {
+        System.out.println("Hi Master DevOps");
+    }
+}
+```
+
+### Étape 3 : Script récupéré depuis GitHub
+
+Le job est lié au dépôt `https://github.com/meryemelheni/jenkins-freestyle.git` (section **Gestion de code source**, branche `*/main`). Le dépôt contient `script.sh` et `Test.java`. L'étape de build devient :
+
+```bash
+sh script.sh
+```
+
+![Configuration du job](07-freestyle-config.png)
+
+![Gestion de code source](09-git-config.png)
+
+La console montre le clonage du dépôt, l'exécution du script et le résultat `Hi Master DevOps` :
+
+![Console du build](08-freestyle-console.png)
+
+### Étape 4 : Déclenchement automatique et rétention
+
+- **Construire périodiquement** avec le planning `H/5 * * * *` : un build toutes les 5 minutes.
+- **Supprimer les anciens builds** : seuls les 2 derniers builds sont conservés.
+- **Supprimer le workspace avant le démarrage du build** : le dossier est vidé à chaque lancement.
+
+![Rétention des builds](10a-retention.png)
+
+![Trigger périodique](10b-trigger.png)
+
+L'historique ne contient que 2 builds :
+
+![Historique](11-historique-2-builds.png)
